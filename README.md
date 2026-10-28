@@ -27,6 +27,7 @@
   .scale{display:flex;justify-content:space-between;color:var(--mut);font-size:.8rem;margin-top:6px}
   .secret{font-size:5rem;font-weight:900;color:var(--acc);text-align:center;line-height:1}
   .answer{font-size:1.5rem;font-style:italic;padding:12px;border-left:4px solid var(--acc);background:#171a26;border-radius:6px}
+  .answer.hidden{opacity:.75;background:#1a1d2a;border-left-color:#49506a;color:var(--mut)}
   .nums{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
   .nums button{margin:0;padding:16px 0;font-size:1.3rem;background:#2c3044;color:var(--txt)}
   .nums button.sel{background:var(--acc);color:#1a1300}
@@ -39,6 +40,16 @@
   .mut{color:var(--mut)}
   .err{color:var(--bad)}
   .good{color:var(--ok)}
+
+  .leaderboard{overflow:hidden}
+  .leaderboard table{border-collapse:separate;border-spacing:0 7px;width:100%}
+  .leaderboard thead th{padding:0 8px 6px;color:var(--mut);font-size:.8rem;text-transform:uppercase;letter-spacing:.05em}
+  .leaderboard tbody tr{background:rgba(255,255,255,.025)}
+  .leaderboard tbody tr:first-child{background:rgba(255,181,71,.09);box-shadow:inset 0 0 0 1px rgba(255,181,71,.18)}
+  .leaderboard td{padding:10px 8px;border-bottom:none}
+  .leaderboard td:first-child{border-radius:10px 0 0 10px}
+  .leaderboard td:last-child{border-radius:0 10px 10px 0}
+  .leaderboard .score-input{width:72px;background:#111722;padding:6px 8px;border-radius:8px;border:1px solid var(--line);color:var(--txt)}
 </style>
 </head>
 <body>
@@ -64,15 +75,14 @@ let peer=null, isHost=false, myId=null, myName="", hostConn=null, conns={};
 let state=null, mySecret=null, localDeadline=0, error="", myGuess=null, screen="home";
 let hostTimer=null;
 
-const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const esc=s=>String(s??"").replace(/[&<>\"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
 const $=id=>document.getElementById(id);
 
 /* ---------------- RENDER ---------------- */
 function render(){
-  // preserve input values & focus across re-renders
   const saved={}; let focus=document.activeElement?.id, selS, selE;
   document.querySelectorAll("#app input,#app textarea,#app select").forEach(e=>{if(e.id) saved[e.id]=e.value});
-  if(focus && $(focus) && "selectionStart" in $(focus)){try{selS=$(focus).selectionStart;selE=$(focus).selectionEnd}catch(_){}}
+  if(focus && $(focus) && "selectionStart" in $(focus)){try{selS=$(focus).selectionStart;selE=$(focus).selectionEnd}catch(_){} }
   $("app").innerHTML = view();
   for(const id in saved){ if($(id) && !$(id).dataset.fresh) $(id).value=saved[id]; }
   if(focus && $(focus)){ $(focus).focus(); try{ if(selS!=null) $(focus).setSelectionRange(selS,selE);}catch(_){} }
@@ -137,21 +147,31 @@ function phaseView(s){
         <button class="sec" onclick="newPrompt()">Change prompt</button></div>`
         : `<div class="card">The host is choosing a player…</div>`);
 
+    case "ready":
+      if(isHost) return promptCard(s)+`<div class="card"><h2>Ready to start</h2>
+        <div class="mut">Selected player</div>
+        <div class="prompt" style="margin-top:8px">${esc(activeName(s))}</div>
+        <button onclick="startRound()">Start round</button>
+        <button class="sec" onclick="newPrompt()">Choose a different prompt</button></div>`;
+      return promptCard(s)+`<div class="card">The host is starting the round…</div>`;
+
     case "answer":
       if(amActive) return promptCard(s)+`<div class="card"><span class="timer" id="timer"></span><div class="mut">Your secret number</div>
         <div class="secret">${mySecret??"…"}</div>
         <label>Write something that fits a ${mySecret} on this scale</label>
-        <div class="row"><input id="ans" maxlength="120" placeholder="Your answer" onkeydown="if(event.key==='Enter')sendAnswer()"><button style="margin-top:0;flex:0 0 auto" onclick="sendAnswer()">Submit</button></div></div>`;
+        <div class="row"><input id="ans" maxlength="120" placeholder="Your answer" onkeydown="if(event.key==='Enter')sendAnswer()"><button style="margin-top:0;flex:0 0 auto" onclick="sendAnswer()">Send answer</button></div></div>`;
       return promptCard(s)+`<div class="card"><span class="timer" id="timer"></span>
         ${isHost?`<div class="mut">Secret number for ${esc(activeName(s))}</div><div class="secret">${s._secret}</div>`:""}
         <p><b>${esc(activeName(s))}</b> is writing an answer…</p></div>`;
 
     case "guess": {
-      const top = promptCard(s)+`<div class="card"><div class="mut">${esc(activeName(s))}'s answer</div><div class="answer">${esc(s.answer)}</div></div>`;
+      const visible = isHost || !s.answerHidden;
+      const answerText = visible ? `<div class="answer">${esc(s.answer)}</div>` : `<div class="answer hidden">Answer hidden until the host reveals it.</div>`;
+      const top = promptCard(s)+`<div class="card"><div class="mut">${esc(activeName(s))}'s answer</div>${answerText}</div>`;
       const done = s.guessed.map(id=>s.players.find(p=>p.id===id)?.name).filter(Boolean);
       const status=`<p class="mut">Guessed: ${done.length?done.map(n=>`<span class="pill">${esc(n)}</span>`).join(""):"nobody yet"}</p>`;
       if(isHost) return top+`<div class="card"><span class="timer" id="timer"></span><div class="mut">Secret number</div><div class="secret">${s._secret}</div>${status}
-        <button class="sec" onclick="reveal()">Reveal now</button></div>`;
+        ${s.answerHidden?`<button class="sec" onclick="revealAnswer()">Reveal answer</button>`:`<button class="sec" onclick="reveal()">Reveal now</button>`}</div>`;
       if(amActive) return top+`<div class="card"><span class="timer" id="timer"></span>Everyone is guessing your number…${status}</div>`;
       const mine = s.guessed.includes(myId);
       return top+`<div class="card"><span class="timer" id="timer"></span><h2>Which number was it?</h2>
@@ -180,10 +200,10 @@ function phaseView(s){
 
 function leaderboard(s){
   const sorted=[...s.players].sort((a,b)=>b.score-a.score);
-  return `<div class="card"><h2>Leaderboard</h2><table><tr><th>#</th><th>Player</th><th>Points</th></tr>
-    ${sorted.map((p,i)=>`<tr><td>${i+1}</td><td>${esc(p.name)}${p.id===myId?" <span class='mut'>(you)</span>":""}${s.activeId===p.id&&s.phase!=="lobby"?" ✍️":""}</td>
-    <td>${isHost?`<input type="number" value="${p.score}" data-fresh="1" onchange="editScore('${p.id}',this.value)">`:p.score}</td></tr>`).join("")}
-    </table>${isHost?`<p class="mut" style="font-size:.8rem">You can edit points directly.</p>`:""}</div>`;
+  return `<div class="card leaderboard"><h2>Leaderboard</h2><table><thead><tr><th>#</th><th>Player</th><th>Points</th></tr></thead><tbody>
+    ${sorted.map((p,i)=>`<tr><td>${i+1}</td><td>${esc(p.name)}${p.id===myId?" <span class='mut'>(you)</span>":""}${s.activeId===p.id&&s.phase!="lobby"?" ✍️":""}</td>
+    <td>${isHost?`<input class="score-input" type="number" value="${p.score}" data-fresh="1" onchange="editScore('${p.id}',this.value)">`:p.score}</td></tr>`).join("")}
+    </tbody></table>${isHost?`<p class="mut" style="font-size:.8rem">You can edit points directly.</p>`:""}</div>`;
 }
 
 function tick(){
@@ -208,7 +228,7 @@ function hostRoom(){
   peer=new Peer(PREFIX+code);
   peer.on("open",id=>{
     myId=id;
-    state={code,phase:"lobby",players:[],round:0,totalRounds:5,answerTime:30,guessTime:20,prompt:"",activeId:null,answer:"",guesses:{},guessed:[],secret:null,_secret:null,timeLeft:0};
+    state={code,phase:"lobby",players:[],round:0,totalRounds:5,answerTime:30,guessTime:20,prompt:"",activeId:null,answer:"",guesses:{},guessed:[],secret:null,_secret:null,timeLeft:0,answerHidden:false};
     screen="game"; render();
   });
   peer.on("connection",c=>{
@@ -252,6 +272,7 @@ function broadcast(){
   state.timeLeft = (state.phase==="answer"||state.phase==="guess")?left:0;
   const pub={...state,_secret:null};
   if(state.phase!=="reveal"){pub.secret=null; pub.guesses={};}
+  if(state.phase==="guess" && state.answerHidden){ pub.answer = "Answer hidden until the host reveals it."; }
   for(const id in conns){ try{conns[id].send({t:"state",state:pub})}catch(_){} }
   render();
 }
@@ -293,22 +314,45 @@ function newPrompt(){state.phase="prompt"; broadcast();}
 
 function selectPlayer(id){
   state.activeId=id; state._secret=1+Math.floor(Math.random()*10);
-  state.answer=""; state.guesses={}; state.guessed=[]; state.secret=null;
+  state.answer=""; state.guesses={}; state.guessed=[]; state.secret=null; state.answerHidden=true;
+  state.phase="ready";
+  state.timeLeft=0;
+  clearTimeout(hostTimer);
+  broadcast();
+}
+
+function startRound(){
   state.phase="answer";
   setTimer(state.answerTime,()=>{ if(state.phase==="answer"){state.answer="(ran out of time)";startGuessing();} });
   broadcast();
-  conns[id]?.send({t:"secret",n:state._secret});
+  conns[state.activeId]?.send({t:"secret",n:state._secret});
 }
+
 function startGuessing(){
   state.phase="guess";
+  state.answerHidden=true;
   setTimer(state.guessTime,()=>{ if(state.phase==="guess") reveal(); });
   broadcast();
 }
+
+function revealAnswer(){
+  state.answerHidden=false;
+  broadcast();
+}
+
 function points(g,s){const d=Math.abs(g-s);return d===0?4:d===1?2:d===2?1:0}
 function reveal(){
   clearTimeout(hostTimer);
   state.secret=state._secret;
-  for(const id in state.guesses){const p=state.players.find(p=>p.id===id); if(p) p.score+=points(state.guesses[id],state.secret);}
+  state.answerHidden=false;
+
+  const answerer=state.players.find(p=>p.id===state.activeId);
+  for(const id in state.guesses){
+    const p=state.players.find(p=>p.id===id);
+    const pts=points(state.guesses[id],state.secret);
+    if(p) p.score += pts;
+    if(answerer) answerer.score += pts;
+  }
   state.phase="reveal"; broadcast();
 }
 function nextRound(){
