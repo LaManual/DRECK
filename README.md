@@ -5,74 +5,77 @@
 <title>On a Scale – Party Game</title>
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <style>
-  :root{--bg:#0f1220;--bg-2:#171b2a;--card:#1a2030;--card-2:#1f273c;--line:#2d3750;--txt:#edf2ff;--mut:#9aa7c4;--acc:#ffb547;--acc-2:#f79d2a;--ok:#49d28a;--bad:#ff6f7d;--shadow:rgba(4,8,20,.45)}
+  :root{--bg:#0d1321;--bg-2:#151d2f;--card:#1a2235;--card-2:#212d46;--line:#2d3b59;--txt:#edf3ff;--mut:#9aa9c5;--acc:#ffb857;--acc-2:#ff9f43;--ok:#4fe0a3;--bad:#ff767f;--shadow:rgba(3,7,16,.45)}
   *{box-sizing:border-box}
-  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:radial-gradient(circle at top, #1a2133 0%, var(--bg) 40%);color:var(--txt);min-height:100vh}
-  .wrap{max-width:760px;margin:0 auto;padding:24px 16px 48px}
-  h1{font-size:2.2rem;margin:0 0 4px;letter-spacing:-.04em}
+  html,body{margin:0;padding:0}
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:radial-gradient(circle at top, #1a2643 0%, var(--bg) 42%);color:var(--txt);min-height:100vh}
+  .wrap{max-width:820px;margin:0 auto;padding:24px 16px 48px}
+  h1{font-size:2.2rem;margin:0 0 6px;letter-spacing:-.05em}
   h1 span{color:var(--acc)}
   h2{margin:0 0 12px;font-size:1.2rem;letter-spacing:-.02em}
   .sub{color:var(--mut);margin:0 0 20px;line-height:1.5}
-  .card{background:linear-gradient(180deg, rgba(31,39,60,.92), rgba(22,28,42,.92));border:1px solid var(--line);border-radius:18px;padding:18px;margin-bottom:16px;box-shadow:0 16px 28px rgba(0,0,0,.12)}
-  input,select,textarea{width:100%;padding:11px 12px;border-radius:12px;border:1px solid var(--line);background:#121a2a;color:var(--txt);font-size:1rem;font-family:inherit;transition:border-color .15s ease, box-shadow .15s ease, transform .15s ease}
-  input:focus,select:focus,textarea:focus{outline:none;border-color:rgba(255,181,71,.8);box-shadow:0 0 0 3px rgba(255,181,71,.15)}
+  .card{background:linear-gradient(180deg, rgba(28,36,55,.98), rgba(19,25,37,.96));border:1px solid var(--line);border-radius:18px;padding:18px;margin-bottom:16px;box-shadow:0 18px 36px rgba(0,0,0,.12)}
+  .card.soft{background:linear-gradient(180deg, rgba(25,33,49,.96), rgba(17,22,33,.96))}
+  input,select,textarea{width:100%;padding:11px 12px;border-radius:12px;border:1px solid var(--line);background:#101827;color:var(--txt);font-size:1rem;font-family:inherit;transition:border-color .15s ease, box-shadow .15s ease}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:rgba(255,184,87,.88);box-shadow:0 0 0 3px rgba(255,184,87,.12)}
   textarea{min-height:90px;resize:vertical}
-  label{display:block;font-size:.82rem;color:var(--mut);margin:10px 0 6px;font-weight:600;letter-spacing:.02em}
-  button{background:linear-gradient(180deg,var(--acc) 0%,var(--acc-2) 100%);color:#201600;border:0;border-radius:12px;padding:11px 16px;font-weight:800;font-size:1rem;cursor:pointer;margin-top:10px;transition:transform .12s ease, filter .12s ease, opacity .12s ease;box-shadow:0 8px 18px rgba(255,181,71,.2)}
+  label{display:block;font-size:.8rem;color:var(--mut);margin:10px 0 6px;font-weight:700;letter-spacing:.02em}
+  button{background:linear-gradient(180deg,var(--acc) 0%,var(--acc-2) 100%);color:#201600;border:0;border-radius:12px;padding:11px 16px;font-weight:800;font-size:1rem;cursor:pointer;margin-top:10px;transition:transform .12s ease,filter .12s ease,opacity .12s ease;box-shadow:0 10px 20px rgba(255,184,87,.18)}
   button:hover{transform:translateY(-1px);filter:brightness(1.02)}
   button:active{transform:translateY(0)}
-  button.sec{background:#292f41;color:var(--txt);box-shadow:none}
+  button.sec{background:#2a3247;color:var(--txt);box-shadow:none}
   button:disabled{opacity:.45;cursor:not-allowed;transform:none;box-shadow:none}
   .row{display:flex;gap:10px;flex-wrap:wrap}
   .row>*{flex:1;min-width:140px}
-  .code{font-size:2.7rem;font-weight:900;letter-spacing:.26em;color:var(--acc);text-shadow:0 0 18px rgba(255,181,71,.16)}
+  .code{font-size:2.7rem;font-weight:900;letter-spacing:.24em;color:var(--acc);text-shadow:0 0 18px rgba(255,184,87,.14)}
   .prompt{font-size:1.45rem;font-weight:800;line-height:1.3;letter-spacing:-.02em}
-  .scale{display:flex;justify-content:space-between;color:var(--mut);font-size:.8rem;margin-top:6px}
+  .scale{display:flex;justify-content:space-between;color:var(--mut);font-size:.8rem;margin-top:8px}
   .secret{font-size:5rem;font-weight:900;color:var(--acc);text-align:center;line-height:1;letter-spacing:-.06em}
-  .answer{font-size:1.5rem;font-style:italic;padding:12px 14px;border-left:4px solid var(--acc);background:#171d2b;border-radius:10px;line-height:1.4}
-  .answer.hidden{opacity:.75;background:#1a1d2a;border-left-color:#49506a;color:var(--mut)}
+  .answer{font-size:1.5rem;font-style:italic;padding:12px 14px;border-left:4px solid var(--acc);background:#171f2d;border-radius:10px;line-height:1.4}
+  .answer.hidden{opacity:.75;background:#1a1d2a;border-left-color:#4f5a74;color:var(--mut)}
   .nums{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
-  .nums button{margin:0;padding:14px 0;font-size:1.25rem;background:#2a3146;color:var(--txt);border:1px solid transparent}
-  .nums button.sel{background:linear-gradient(180deg,var(--acc) 0%, var(--acc-2) 100%);color:#201600;border-color:rgba(255,181,71,.45);box-shadow:0 8px 18px rgba(255,181,71,.2)}
-  .timer{font-size:1.1rem;font-weight:800;color:var(--acc);float:right;background:rgba(255,181,71,.08);border:1px solid rgba(255,181,71,.18);padding:6px 10px;border-radius:999px}
+  .nums button{margin:0;padding:14px 0;font-size:1.25rem;background:#2a3247;color:var(--txt);border:1px solid transparent}
+  .nums button.sel{background:linear-gradient(180deg,var(--acc) 0%,var(--acc-2) 100%);color:#201600;border-color:rgba(255,184,87,.4);box-shadow:0 10px 20px rgba(255,184,87,.2)}
+  .timer{font-size:1.05rem;font-weight:800;color:var(--acc);float:right;background:rgba(255,184,87,.08);border:1px solid rgba(255,184,87,.2);padding:6px 10px;border-radius:999px}
   table{width:100%;border-collapse:collapse}
   td,th{padding:9px 8px;border-bottom:1px solid var(--line);text-align:left}
-  th{color:var(--mut);font-weight:700;font-size:.8rem;letter-spacing:.06em;text-transform:uppercase}
+  th{color:var(--mut);font-weight:700;font-size:.75rem;letter-spacing:.08em;text-transform:uppercase}
   td input{width:80px;padding:6px}
-  .pill{display:inline-block;padding:4px 10px;border-radius:999px;background:#2c3144;border:1px solid rgba(255,255,255,.04);font-size:.8rem;margin:3px 4px 3px 0;color:var(--txt)}
+  .pill{display:inline-block;padding:4px 10px;border-radius:999px;background:#2a3247;border:1px solid rgba(255,255,255,.04);font-size:.8rem;margin:3px 4px 3px 0;color:var(--txt)}
   .mut{color:var(--mut)}
   .err{color:var(--bad)}
   .good{color:var(--ok)}
 
-  .eyebrow{display:inline-block;font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mut);font-weight:800}
-  .host-panel{background:linear-gradient(180deg, rgba(26,32,48,.98), rgba(18,24,37,.96));border-color:rgba(255,181,71,.22)}
+  .eyebrow{display:inline-block;font-size:.66rem;letter-spacing:.14em;text-transform:uppercase;color:var(--mut);font-weight:800}
+  .host-panel{background:linear-gradient(180deg, rgba(25,33,49,.98), rgba(18,24,37,.98));border-color:rgba(255,184,87,.2)}
   .panel-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:12px}
   .host-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
-  .control-block{display:flex;flex-direction:column;gap:8px;padding:12px;border-radius:12px;border:1px solid var(--line);background:rgba(12,16,26,.3)}
+  .control-block{display:flex;flex-direction:column;gap:8px;padding:12px;border-radius:12px;border:1px solid var(--line);background:rgba(11,16,26,.35)}
+  .toggle-row{display:flex;align-items:center;gap:8px;padding-top:4px;color:var(--txt);font-size:.85rem;font-weight:600}
+  .toggle-row input{width:16px;height:16px;accent-color:var(--acc)}
   .host-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
   .host-actions button{margin-top:0}
-  .stat-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:#111a2e;border:1px solid var(--line);color:var(--txt);font-size:.8rem;font-weight:700}
+  .stat-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:#111a2a;border:1px solid var(--line);color:var(--txt);font-size:.78rem;font-weight:800}
 
-  .leaderboard{overflow:hidden}
-  .leaderboard table{border-collapse:separate;border-spacing:0 8px;width:100%}
-  .leaderboard thead th{padding:0 8px 6px;color:var(--mut);font-size:.75rem;text-transform:uppercase;letter-spacing:.08em}
-  .leaderboard tbody tr{background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.04)}
-  .leaderboard tbody tr:first-child{background:rgba(255,181,71,.10);box-shadow:inset 0 0 0 1px rgba(255,181,71,.18)}
-  .leaderboard td{padding:10px 8px;border-bottom:none}
-  .leaderboard td:first-child{border-radius:12px 0 0 12px}
-  .leaderboard td:last-child{border-radius:0 12px 12px 0}
-  .leaderboard .score-input{width:72px;background:#0f1627;padding:6px 8px;border-radius:8px;border:1px solid var(--line);color:var(--txt);font-weight:700}
-  .rank{display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:28px;border-radius:9px;background:rgba(255,255,255,.04);font-weight:800;color:var(--mut)}
-  .leaderboard tbody tr:first-child .rank{background:rgba(255,181,71,.2);color:var(--acc)}
-  .player-name{font-weight:700}
-  .player-you{color:var(--mut);font-weight:600}
-  .score-box{display:inline-flex;align-items:center;justify-content:center;min-width:56px;height:34px;padding:0 8px;border-radius:10px;background:#121b2c;border:1px solid var(--line);font-weight:800}
+  .scoreboard{overflow:hidden}
+  .scoreboard-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+  .score-list{display:flex;flex-direction:column;gap:8px}
+  .score-row{display:grid;grid-template-columns:44px 1fr auto;align-items:center;gap:12px;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:rgba(255,255,255,.02)}
+  .score-row.top{background:rgba(255,184,87,.09);border-color:rgba(255,184,87,.25)}
+  .score-rank{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:10px;background:rgba(255,255,255,.04);font-weight:900;color:var(--mut)}
+  .score-row.top .score-rank{background:rgba(255,184,87,.18);color:var(--acc)}
+  .score-name{font-weight:800;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .score-you{color:var(--mut);font-weight:700}
+  .score-value{display:inline-flex;align-items:center;justify-content:center;min-width:62px;height:34px;padding:0 10px;border-radius:10px;background:#101827;border:1px solid var(--line);font-weight:900}
+  .score-input{width:70px;background:#0f1727;padding:6px 8px;border-radius:8px;border:1px solid var(--line);color:var(--txt);font-weight:800}
+  .score-note{font-size:.78rem;color:var(--mut);padding-top:8px}
 
   @media (max-width:560px){
     .host-grid{grid-template-columns:1fr}
     .code{letter-spacing:.18em;font-size:2.2rem}
     .secret{font-size:4rem}
-    .nums{grid-template-columns:repeat(5, minmax(0,1fr))}
+    .nums{grid-template-columns:repeat(5,minmax(0,1fr))}
+    .score-row{grid-template-columns:40px 1fr auto}
   }
 </style>
 </head>
@@ -104,8 +107,8 @@ const $=id=>document.getElementById(id);
 
 function canShowTimer(){
   if(!state) return false;
-  if(state.phase === "guess") return true;
-  if(state.phase === "answer") return isHost || mySecret !== null;
+  if(state.phase === "answer") return isHost || mySecret !== null ? !!state.answerTimerOn : false;
+  if(state.phase === "guess") return !!state.guessTimerOn;
   return false;
 }
 
@@ -130,7 +133,7 @@ function view(){
       <div class="row"><input id="code" maxlength="4" placeholder="ABCD" style="text-transform:uppercase"><button class="sec" onclick="joinRoom()" style="margin-top:0;flex:0 0 auto">Join</button></div>
       ${error?`<p class="err">${esc(error)}</p>`:""}
     </div>
-    <div class="card mut"><h2 style="color:var(--txt)">How to play</h2>
+    <div class="card soft mut"><h2 style="color:var(--txt)">How to play</h2>
     The host picks a prompt and a player. That player secretly gets a number from 1 to 10 and writes an answer that fits that number on the scale.
     Everyone else guesses the number: <b>4 pts</b> exact, <b>2 pts</b> off by 1, <b>1 pt</b> off by 2.</div>`;
   if(screen==="connecting") return `<div class="card">Connecting…${error?`<p class="err">${esc(error)}</p><button class="sec" onclick="location.reload()">Back</button>`:""}</div>`;
@@ -139,7 +142,7 @@ function view(){
   let h=`<div class="card"><div class="row" style="align-items:center"><div><span class="mut">Room</span><div class="code">${esc(s.code)}</div></div>
     <div style="text-align:right" class="mut">${s.phase==="lobby"?"Lobby":`Round ${s.round} / ${s.totalRounds}`}<br>${isHost?"You are the host":"Playing as <b>"+esc(myName)+"</b>"}</div></div></div>`;
   h+=phaseView(s);
-  h+=leaderboard(s);
+  h+=scoreboard(s);
   return h;
 }
 
@@ -154,8 +157,16 @@ function phaseView(s){
       if(isHost) return `<div class="card host-panel"><div class="panel-head"><div><span class="eyebrow">Host setup</span><h2>Game settings</h2></div><span class="stat-pill">${s.players.length} players</span></div>
         <div class="host-grid">
           <div class="control-block"><label>Rounds</label><input id="rounds" type="number" min="1" max="50" value="${s.totalRounds}"></div>
-          <div class="control-block"><label>Answer time</label><select id="atime">${TIMES.map(t=>`<option value="${t}" ${t===s.answerTime?"selected":""}>${t}s</option>`).join("")}</select></div>
-          <div class="control-block"><label>Guess time</label><select id="gtime">${TIMES.map(t=>`<option value="${t}" ${t===s.guessTime?"selected":""}>${t}s</option>`).join("")}</select></div>
+          <div class="control-block">
+            <label>Answer time</label>
+            <select id="atime" ${s.answerTimerOn?"":"disabled"}>${TIMES.map(t=>`<option value="${t}" ${t===s.answerTime?"selected":""}>${t}s</option>`).join("")}</select>
+            <label class="toggle-row"><input id="answerTimerToggle" type="checkbox" ${s.answerTimerOn?"checked":""}> Use answer timer</label>
+          </div>
+          <div class="control-block">
+            <label>Guess time</label>
+            <select id="gtime" ${s.guessTimerOn?"":"disabled"}>${TIMES.map(t=>`<option value="${t}" ${t===s.guessTime?"selected":""}>${t}s</option>`).join("")}</select>
+            <label class="toggle-row"><input id="guessTimerToggle" type="checkbox" ${s.guessTimerOn?"checked":""}> Use guess timer</label>
+          </div>
         </div>
         <div class="host-actions">
           <button onclick="startGame()" ${s.players.length<2?"disabled":""}>Start game</button>
@@ -229,18 +240,21 @@ function phaseView(s){
   return "";
 }
 
-function leaderboard(s){
+function scoreboard(s){
   const sorted=[...s.players].sort((a,b)=>b.score-a.score);
-  return `<div class="card leaderboard"><h2>Leaderboard</h2><table><thead><tr><th>#</th><th>Player</th><th>Points</th></tr></thead><tbody>
-    ${sorted.map((p,i)=>`<tr><td><span class="rank">${i+1}</span></td><td><span class="player-name">${esc(p.name)}</span>${p.id===myId?" <span class='player-you'>(you)</span>":""}${s.activeId===p.id&&s.phase!="lobby"?" ✍️":""}</td>
-    <td>${isHost?`<input class="score-input" type="number" value="${p.score}" data-fresh="1" onchange="editScore('${p.id}',this.value)">`:`<span class="score-box">${p.score}</span>`}</td></tr>`).join("")}
-    </tbody></table>${isHost?`<p class="mut" style="font-size:.8rem;margin-top:10px;margin-bottom:0">You can edit points directly.</p>`:""}</div>`;
+  const rows=sorted.map((p,i)=>`<div class="score-row ${i===0?"top":""}"><div class="score-rank">${i+1}</div><div class="score-name">${esc(p.name)}${p.id===myId?" <span class='score-you'>(you)</span>":""}${s.activeId===p.id&&s.phase!="lobby"?" ✍️":""}</div>
+    <div>${isHost?`<input class="score-input" type="number" value="${p.score}" data-fresh="1" onchange="editScore('${p.id}',this.value)">`:`<span class="score-value">${p.score}</span>`}</div></div>`).join("");
+  return `<div class="card scoreboard"><div class="scoreboard-head"><div><h2>Scoreboard</h2></div><span class="stat-pill">${sorted.length} players</span></div>
+    <div class="score-list">${rows}</div>
+    ${isHost?`<div class="score-note">Adjust scores directly from here.</div>`:""}
+  </div>`;
 }
 
 function tick(){
   const el=$("timer"); if(!el) return;
   if(!canShowTimer()){
-    if(state && state.phase === "answer" && !isHost && mySecret === null){ el.textContent = "Waiting…"; }
+    if(state && state.phase === "answer" && !isHost && mySecret === null){ el.textContent = state.answerTimerOn ? "Waiting…" : "No timer"; }
+    else if(state && state.phase === "guess" && !state.guessTimerOn){ el.textContent = "No timer"; }
     else { el.textContent = ""; }
     return;
   }
@@ -263,7 +277,7 @@ function hostRoom(){
   peer=new Peer(PREFIX+code);
   peer.on("open",id=>{
     myId=id;
-    state={code,phase:"lobby",players:[],round:0,totalRounds:5,answerTime:30,guessTime:20,prompt:"",activeId:null,answer:"",guesses:{},guessed:[],secret:null,_secret:null,timeLeft:0,answerHidden:false};
+    state={code,phase:"lobby",players:[],round:0,totalRounds:5,answerTime:30,guessTime:20,prompt:"",activeId:null,answer:"",guesses:{},guessed:[],secret:null,_secret:null,timeLeft:0,answerHidden:false,answerTimerOn:true,guessTimerOn:true};
     screen="game"; render();
   });
   peer.on("connection",c=>{
@@ -298,12 +312,22 @@ function onClientData(d){
     if(state.phase==="guess" && prevPhase!=="guess") myGuess=null;
     if(state.phase!==prevPhase && $("ans")) $("ans").value="";
     render();
-  } else if(d.t==="secret"){ mySecret=d.n; localDeadline=Date.now()+state.answerTime*1000; state.timeLeft=state.answerTime; render(); }
+  } else if(d.t==="secret"){ mySecret=d.n; localDeadline=Date.now()+state.answerTime*1000; state.timeLeft=state.answerTimerOn?state.answerTime:0; render(); }
+}
+
+function startGuessTimer(){
+  clearTimeout(hostTimer);
+  if(!state || state.phase !== "guess" || !state.guessTimerOn){
+    localDeadline=0; state.timeLeft=0; return;
+  }
+  localDeadline=Date.now()+state.guessTime*1000;
+  state.timeLeft=state.guessTime;
+  hostTimer=setTimeout(()=>{ if(state.phase==="guess") reveal(); }, state.guessTime*1000);
 }
 
 function broadcast(){
   const left=Math.max(0,Math.round((localDeadline-Date.now())/1000));
-  state.timeLeft = (state.phase==="answer"||state.phase==="guess")?left:0;
+  state.timeLeft = (state.phase==="answer" || state.phase==="guess") && ((state.phase==="answer" && state.answerTimerOn) || (state.phase==="guess" && state.guessTimerOn)) ? left : 0;
   const pub={...state,_secret:null};
   if(state.phase!=="reveal"){pub.secret=null; pub.guesses={};}
   if(state.phase==="guess" && state.answerHidden){ pub.answer = "Answer hidden until the host reveals it."; }
@@ -320,7 +344,10 @@ function onHostData(c,d){
     if(state.phase==="answer" && c.peer===state.activeId) c.send({t:"secret",n:state._secret});
   } else if(d.t==="answer" && state.phase==="answer" && c.peer===state.activeId){
     state.answer=String(d.text).slice(0,120)||"(no answer)";
-    startGuessing();
+    state.phase="guess";
+    state.answerHidden=true;
+    state.timeLeft=0; localDeadline=0; clearTimeout(hostTimer);
+    broadcast();
   } else if(d.t==="guess" && state.phase==="guess" && c.peer!==state.activeId && !state.guessed.includes(c.peer)){
     const n=parseInt(d.n); if(n<1||n>10) return;
     state.guesses[c.peer]=n; state.guessed.push(c.peer);
@@ -332,12 +359,15 @@ function onHostData(c,d){
 function setTimer(sec,fn){
   clearTimeout(hostTimer);
   localDeadline=Date.now()+sec*1000;
+  state.timeLeft=sec;
   hostTimer=setTimeout(fn,sec*1000);
 }
 
 function startGame(){
   state.totalRounds=Math.max(1,Math.min(50,parseInt($("rounds").value)||5));
   state.answerTime=parseInt($("atime").value); state.guessTime=parseInt($("gtime").value);
+  state.answerTimerOn = $("answerTimerToggle").checked;
+  state.guessTimerOn = $("guessTimerToggle").checked;
   state.players.forEach(p=>p.score=0);
   state.round=1; state.phase="prompt"; broadcast();
 }
@@ -350,35 +380,36 @@ function selectPlayer(id){
   state.activeId=id; state._secret=1+Math.floor(Math.random()*10);
   state.answer=""; state.guesses={}; state.guessed=[]; state.secret=null; state.answerHidden=true;
   state.phase="ready";
-  state.timeLeft=0;
-  clearTimeout(hostTimer);
+  state.timeLeft=0; localDeadline=0; clearTimeout(hostTimer);
   broadcast();
 }
 
 function startRound(){
   state.phase="answer";
-  state.timeLeft=0;
-  localDeadline=0;
-  clearTimeout(hostTimer);
+  state.answerHidden=true;
+  state.timeLeft=0; localDeadline=0; clearTimeout(hostTimer);
   broadcast();
   conns[state.activeId]?.send({t:"secret",n:state._secret});
-  setTimeout(()=>{
-    if(state.phase === "answer") {
-      setTimer(state.answerTime,()=>{ if(state.phase==="answer"){state.answer="(ran out of time)";startGuessing();} });
-      broadcast();
-    }
-  }, 250);
-}
-
-function startGuessing(){
-  state.phase="guess";
-  state.answerHidden=true;
-  setTimer(state.guessTime,()=>{ if(state.phase==="guess") reveal(); });
-  broadcast();
+  if(state.answerTimerOn){
+    setTimeout(()=>{
+      if(state.phase === "answer" && state.answerTimerOn){
+        state.answer="(ran out of time)";
+        state.phase="guess";
+        state.answerHidden=true;
+        clearTimeout(hostTimer);
+        state.timeLeft=0; localDeadline=0;
+        broadcast();
+      }
+    }, state.answerTime*1000);
+  }
 }
 
 function revealAnswer(){
+  if(state.phase !== "guess") return;
   state.answerHidden=false;
+  state.answerRevealed = true;
+  if(state.guessTimerOn) startGuessTimer();
+  else { state.timeLeft = 0; localDeadline = 0; clearTimeout(hostTimer); }
   broadcast();
 }
 
@@ -387,7 +418,6 @@ function reveal(){
   clearTimeout(hostTimer);
   state.secret=state._secret;
   state.answerHidden=false;
-
   const answerer=state.players.find(p=>p.id===state.activeId);
   for(const id in state.guesses){
     const p=state.players.find(p=>p.id===id);
@@ -395,7 +425,7 @@ function reveal(){
     if(p) p.score += pts;
     if(answerer) answerer.score += pts;
   }
-  state.phase="reveal"; broadcast();
+  state.phase="reveal"; state.timeLeft=0; localDeadline=0; broadcast();
 }
 function nextRound(){
   if(state.round>=state.totalRounds){state.phase="end";}
