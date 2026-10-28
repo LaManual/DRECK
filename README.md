@@ -109,7 +109,6 @@ function canShowTimer(){
   return false;
 }
 
-/* ---------------- RENDER ---------------- */
 function render(){
   const saved={}; let focus=document.activeElement?.id, selS, selE;
   document.querySelectorAll("#app input,#app textarea,#app select").forEach(e=>{if(e.id) saved[e.id]=e.value});
@@ -159,7 +158,7 @@ function phaseView(s){
           <div class="control-block"><label>Guess time</label><select id="gtime">${TIMES.map(t=>`<option value="${t}" ${t===s.guessTime?"selected":""}>${t}s</option>`).join("")}</select></div>
         </div>
         <div class="host-actions">
-          <button onclick="startGame()" ${s.players.length<2?"disabled":""]}>Start game</button>
+          <button onclick="startGame()" ${s.players.length<2?"disabled":""}>Start game</button>
           <button class="sec" type="button" onclick="broadcast()">Refresh lobby</button>
         </div>
         ${s.players.length<2?`<div class="mut" style="margin-top:10px">Need at least 2 players to begin.</div>`:""}
@@ -250,7 +249,6 @@ function tick(){
 }
 setInterval(tick,250);
 
-/* ---------------- NETWORK ---------------- */
 function getName(){
   const n=$("name").value.trim();
   if(!n){error="Please enter your name.";render();return null}
@@ -303,7 +301,6 @@ function onClientData(d){
   } else if(d.t==="secret"){ mySecret=d.n; localDeadline=Date.now()+state.answerTime*1000; state.timeLeft=state.answerTime; render(); }
 }
 
-/* ---------------- HOST LOGIC ---------------- */
 function broadcast(){
   const left=Math.max(0,Math.round((localDeadline-Date.now())/1000));
   state.timeLeft = (state.phase==="answer"||state.phase==="guess")?left:0;
@@ -408,7 +405,6 @@ function nextRound(){
 function restart(){state.phase="lobby"; state.round=0; state.activeId=null; broadcast();}
 function editScore(id,v){const p=state.players.find(p=>p.id===id); if(p){p.score=parseInt(v)||0; broadcast();}}
 
-/* ---------------- PLAYER ACTIONS ---------------- */
 function sendAnswer(){const v=$("ans").value.trim(); if(!v) return; hostConn.send({t:"answer",text:v});}
 function sendGuess(n){myGuess=n; hostConn.send({t:"guess",n}); render();}
 
