@@ -1,500 +1,329 @@
-<html lang="de">
+<html lang="en">
 <head>
-<meta charset="UTF-8">
+<meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Number Bluff</title>
+<title>On a Scale – Party Game</title>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <style>
-:root{color-scheme:dark;--bg:#10131c;--card:#1b2030;--line:#343c50;--text:#f5f6fb;--muted:#aeb7cc;--accent:#a78bfa;--green:#6ee7b7}
-*{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 system-ui,sans-serif}
-main{max-width:760px;margin:auto;padding:24px 16px 50px}
-h1{font-size:clamp(2.3rem,8vw,4rem);letter-spacing:-2px;margin:0}
-h1 span{color:var(--accent)}
-h2{margin-top:0}
-p{margin:8px 0}
-.muted{color:var(--muted)}
-.small{font-size:.9rem}
-.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;margin:16px 0}
-.row{display:flex;gap:10px;flex-wrap:wrap}
-.row>*{flex:1;min-width:130px}
-input,select,button{font:inherit;width:100%;padding:12px;border-radius:10px;border:1px solid var(--line)}
-input,select{background:#111622;color:var(--text)}
-button{background:var(--accent);color:#171326;font-weight:750;border:0;cursor:pointer}
-button.secondary{background:#252c40;color:var(--text);border:1px solid #414b63}
-button:disabled{opacity:.45;cursor:not-allowed}
-label{display:block;font-weight:650;margin:10px 0 6px}
-.hidden{display:none!important}
-.code{font-size:2rem;letter-spacing:5px;font-weight:900;color:var(--accent)}
-.prompt{font-size:1.4rem;font-weight:750;margin:12px 0}
-.number{font-size:4rem;text-align:center;font-weight:900;color:var(--green)}
-.notice{background:#292641;border-radius:10px;padding:12px;margin:12px 0}
-.player,.score{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid var(--line)}
-.player:last-child,.score:last-child{border-bottom:0}
-.tag{font-size:.75rem;background:#30384c;padding:3px 7px;border-radius:20px}
-.error{color:#fda4af}
-footer{color:var(--muted);font-size:.85rem;margin-top:24px}
+  :root{--bg:#14161f;--card:#1f2230;--line:#2f3346;--txt:#eef0f6;--mut:#9aa0b5;--acc:#ffb547;--ok:#4cd28a;--bad:#ff6b6b}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--txt);min-height:100vh}
+  .wrap{max-width:760px;margin:0 auto;padding:24px 16px}
+  h1{font-size:2rem;margin:0 0 4px;letter-spacing:-.02em}
+  h1 span{color:var(--acc)}
+  h2{margin:0 0 12px;font-size:1.2rem}
+  .sub{color:var(--mut);margin:0 0 20px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px}
+  input,select,textarea{width:100%;padding:11px 12px;border-radius:10px;border:1px solid var(--line);background:#151824;color:var(--txt);font-size:1rem;font-family:inherit}
+  textarea{min-height:90px;resize:vertical}
+  label{display:block;font-size:.85rem;color:var(--mut);margin:10px 0 6px}
+  button{background:var(--acc);color:#1a1300;border:0;border-radius:10px;padding:11px 16px;font-weight:700;font-size:1rem;cursor:pointer;margin-top:10px}
+  button.sec{background:#2c3044;color:var(--txt)}
+  button:disabled{opacity:.4;cursor:not-allowed}
+  .row{display:flex;gap:10px;flex-wrap:wrap}
+  .row>*{flex:1;min-width:140px}
+  .code{font-size:2.6rem;font-weight:800;letter-spacing:.3em;color:var(--acc)}
+  .prompt{font-size:1.4rem;font-weight:700;line-height:1.3}
+  .scale{display:flex;justify-content:space-between;color:var(--mut);font-size:.8rem;margin-top:6px}
+  .secret{font-size:5rem;font-weight:900;color:var(--acc);text-align:center;line-height:1}
+  .answer{font-size:1.5rem;font-style:italic;padding:12px;border-left:4px solid var(--acc);background:#171a26;border-radius:6px}
+  .nums{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+  .nums button{margin:0;padding:16px 0;font-size:1.3rem;background:#2c3044;color:var(--txt)}
+  .nums button.sel{background:var(--acc);color:#1a1300}
+  .timer{font-size:1.1rem;font-weight:800;color:var(--acc);float:right}
+  table{width:100%;border-collapse:collapse}
+  td,th{padding:8px 6px;border-bottom:1px solid var(--line);text-align:left}
+  th{color:var(--mut);font-weight:600;font-size:.85rem}
+  td input{width:80px;padding:6px}
+  .pill{display:inline-block;padding:3px 9px;border-radius:99px;background:#2c3044;font-size:.8rem;margin:2px}
+  .mut{color:var(--mut)}
+  .err{color:var(--bad)}
+  .good{color:var(--ok)}
 </style>
 </head>
 <body>
-<main>
-<h1>NUMBER <span>BLUFF</span></h1>
-<p class="muted">One secret number. One answer. Everyone else takes a guess.</p>
-
-<section id="setup" class="card">
-<h2>Join the game</h2>
-<label for="name">Your name</label>
-<input id="name" maxlength="24" placeholder="Enter your name">
-<div class="row" style="margin-top:12px">
-<button id="create">Create lobby</button>
-<button id="showJoin" class="secondary">Join lobby</button>
-</div>
-<div id="joinArea" class="hidden">
-<label for="codeInput">Four-letter lobby code</label>
-<input id="codeInput" maxlength="4" placeholder="ABCD">
-<button id="join" style="margin-top:10px">Join game</button>
-</div>
-<p id="error" class="error small"></p>
-</section>
-
-<section id="game" class="hidden">
-<div class="card">
-<div class="muted small">LOBBY CODE</div>
-<div id="codeDisplay" class="code"></div>
-<button id="copy" class="secondary" style="margin-top:8px">Copy invite link</button>
-<h3>Players</h3>
-<div id="players"></div>
+<div class="wrap">
+  <h1>On a <span>Scale</span></h1>
+  <p class="sub">Describe your secret number. Let your friends guess it.</p>
+  <div id="app"></div>
 </div>
 
-<div id="hostPanel" class="card hidden">
-<h2>Host controls</h2>
-<label for="category">Category</label>
-<select id="category">
-<option value="General Knowledge">General Knowledge</option>
-<option value="Minecraft">Minecraft</option>
-<option value="Custom">Custom prompt</option>
-</select>
-<label for="customPrompt" id="customLabel" class="hidden">Your prompt</label>
-<input id="customPrompt" class="hidden" maxlength="180" placeholder="Write your own prompt">
-<div class="row">
-<div>
-<label for="roundLimit">Total rounds</label>
-<select id="roundLimit">
-<option>3</option><option selected>5</option><option>10</option><option>15</option><option>20</option>
-</select>
-</div>
-<div>
-<label for="target">Answer player</label>
-<select id="target"></select>
-</div>
-</div>
-<div class="row" style="margin-top:12px">
-<button id="randomPrompt" class="secondary">Random prompt</button>
-<button id="start">Start round</button>
-</div>
-<label for="manualPrompt">Or enter a prompt manually</label>
-<input id="manualPrompt" placeholder="Optional prompt override">
-<div id="hostSecretBox" class="notice hidden">
-<div class="muted small">SECRET NUMBER</div>
-<div id="hostSecret" class="number"></div>
-</div>
-<div id="editScores" style="margin-top:12px">
-<button id="editScoreBtn" class="secondary">Edit player scores</button>
-</div>
-</div>
-
-<div id="roundPanel" class="card hidden">
-<div id="roundLabel" class="muted small"></div>
-<div id="prompt" class="prompt"></div>
-<p id="role" class="muted"></p>
-<div id="secretBox" class="notice hidden">
-<div class="muted small">YOUR SECRET NUMBER</div>
-<div id="secret" class="number"></div>
-</div>
-<div id="answerArea" class="hidden">
-<label for="answer">Your answer</label>
-<input id="answer" maxlength="250" placeholder="Type your answer">
-<button id="submitAnswer" style="margin-top:10px">Submit answer</button>
-</div>
-<div id="guessArea" class="hidden">
-<label for="guess">Guess the number (1–10)</label>
-<select id="guess">
-<option value="">Choose a number</option>
-<option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
-<option>6</option><option>7</option><option>8</option><option>9</option><option>10</option>
-</select>
-<button id="submitGuess" style="margin-top:10px">Lock in guess</button>
-</div>
-<div id="timer" class="number">20</div>
-<div id="waiting" class="notice hidden">Submitted! Waiting for the round to end…</div>
-<div id="results"></div>
-<button id="next" class="hidden">Next round</button>
-</div>
-
-<div class="card">
-<h2>Leaderboard</h2>
-<div id="leaderboard"></div>
-<p class="muted small">Exact = 4 points · Off by 1 = 2 points · Off by 2 = 1 point</p>
-<button id="leave" class="secondary">Leave lobby</button>
-</div>
-</section>
-<footer>Number Bluff · Peer-to-peer multiplayer prototype</footer>
-</main>
-
-<script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script>
-const PREFIX = "numberbluff-room-";
-const $ = id => document.getElementById(id);
-
-const PROMPTS = {
-"General Knowledge": [
-"How many sides does a hexagon have?",
-"How many days are in a leap year?",
-"How many players are on a football team on the field?",
-"How many colours are traditionally listed in a rainbow?",
-"How many continents are commonly taught in school?",
-"How many minutes are in an hour?",
-"How many keys are on a standard piano?",
-"How many planets are in our Solar System?",
-"How many letters are in the English alphabet?",
-"How many rings are on the Olympic symbol?",
-"How many sides does an octagon have?",
-"How many degrees are in a right angle?",
-"How many months have 31 days?",
-"How many cards are in a standard deck without jokers?",
-"How many strings does a standard guitar have?",
-"How many teeth does a typical adult human have?",
-"How many squares are on a chessboard?",
-"How many seconds are in a minute?",
-"How many players are on court for one basketball team?",
-"How many sides does a triangle have?",
-"How many colours are on the flag of Germany?",
-"How many letters are in the word 'elephant'?",
-"How many legs does a spider have?",
-"How many bones are in the adult human body?",
-"How many stripes are on the flag of the United States?",
-"How many players are on a volleyball team on court?",
-"How many minutes are in a day?",
-"How many sides does a pentagon have?",
-"How many hearts does an octopus have?",
-"How many strings does a violin have?"
-],
-"Minecraft": [
-"How many hearts does a player have by default?",
-"How many blocks high is a standard door?",
-"How many eyes can an End Portal frame contain?",
-"How many iron ingots are needed to craft an anvil?",
-"How many obsidian blocks are needed for a minimum Nether portal?",
-"How many inventory slots does a standard chest have?",
-"How many minutes are in one Minecraft day?",
-"How many wooden planks are needed to craft a crafting table?",
-"How many sticks are needed to craft a ladder?",
-"How many pieces of wheat are needed to craft bread?",
-"How many slots are in a player's hotbar?",
-"How many string are needed to craft a bow?",
-"How many diamonds are needed to craft a diamond chestplate?",
-"How many blocks are in a full 3-by-3 beacon base layer?",
-"How many snowballs can one snow block craft?",
-"How many Ender Pearls are needed to craft an Eye of Ender?",
-"How many books are needed to craft a bookshelf?",
-"How many wool blocks are needed to craft a bed?",
-"How many gunpowder are needed to craft TNT?",
-"How many legs does a spider have in Minecraft?",
-"How many slots does a double chest have?",
-"How many iron ingots are needed for an iron pickaxe?",
-"How many planks are needed to craft a boat?",
-"How many diamonds are needed for a diamond sword?",
-"How many obsidian blocks are needed to craft an enchanting table?",
-"How many items can a standard stack hold?",
-"How many gold ingots are needed to craft a golden apple?",
-"How many Ender Eyes are needed to activate a full End Portal?",
-"How many slots does a player's inventory hotbar contain?",
-"How many blocks of iron are needed for a full beacon pyramid base?"
-]
+const PREFIX = "onascale-game-v1-";
+const CATEGORIES = {
+  "Food": ["How spicy is this food?","How healthy is this meal?","How fancy is this restaurant?","How weird is this pizza topping?","How good is this breakfast?"],
+  "Movies & TV": ["How scary is this movie?","How overrated is this show?","How good is this villain?","How rewatchable is this film?","How cringe is this movie scene?"],
+  "Everyday Life": ["How annoying is this habit?","How embarrassing is this situation?","How useful is this object?","How stressful is this situation?","How much would you pay for this?"],
+  "Animals": ["How dangerous is this animal?","How cute is this animal?","How good of a pet is this?","How smart is this animal?","How weird is this animal?"],
+  "Hypothetical": ["How good is this superpower?","How bad is this way to die in a game?","How hard is this job?","How likely is this to happen in 10 years?","How good is this first date idea?"],
+  "Spicy Opinions": ["How controversial is this opinion?","How toxic is this behaviour?","How sus is this excuse?","How red-flag is this?","How acceptable is this at a party?"]
 };
+const TIMES = [10,15,20,25,30,40,45,50,60];
 
-let peer, hostConn, isHost = false, myId = "", myName = "", roomCode = "";
-let players = {}; // id -> {name, score}
-let conns = {};   // host only: id -> PeerJS connection
-let guesses = {}; // host only: id -> guess
-let answers = {}; // host only: id -> answer
-let secretNumber = null, targetId = null;
-let round = 0, roundLimit = 5, phase = "lobby";
-let promptText = "", endAt = 0, timerLoop = null, submitted = false;
-let usedPrompts = new Set(), lastResult = null;
+let peer=null, isHost=false, myId=null, myName="", hostConn=null, conns={};
+let state=null, mySecret=null, localDeadline=0, error="", myGuess=null, screen="home";
+let hostTimer=null;
 
-function setError(s=""){ $("error").textContent = s; }
-function makeCode(){
-  const chars="ABCDEFGHJKLMNPQRSTUVWXYZ";
-  return Array.from({length:4},()=>chars[Math.floor(Math.random()*chars.length)]).join("");
-}
-function nameInput(){return $("name").value.trim().slice(0,24);}
-function send(conn,msg){try{if(conn && conn.open) conn.send(msg);}catch(e){}}
-function broadcast(msg){Object.values(conns).forEach(c=>send(c,msg));}
-function showGame(){
-  $("setup").classList.add("hidden");
-  $("game").classList.remove("hidden");
-  $("codeDisplay").textContent=roomCode;
-  render();
-}
-function showHost(){ $("hostPanel").classList.toggle("hidden",!isHost); }
-function publicState(){
-  return {
-    type:"state", phase, round, roundLimit, promptText, targetId,
-    players, endAt,
-    // Never send the secret number or unrevealed guesses in public state.
-    result: phase==="results" ? lastResult : null
-  };
-}
-function publish(){broadcast(publicState());render();}
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const $=id=>document.getElementById(id);
+
+/* ---------------- RENDER ---------------- */
 function render(){
-  if(!roomCode)return;
-  showHost();
-  $("players").innerHTML=Object.entries(players).map(([id,p])=>
-    `<div class="player"><span>${esc(p.name)} ${id===myId?"<span class='tag'>YOU</span>":""} ${id==="host"?"<span class='tag'>HOST</span>":""}</span><b>${p.score||0} pts</b></div>`
-  ).join("") || "<p class='muted'>Waiting for players…</p>";
-  $("leaderboard").innerHTML=Object.entries(players)
-    .sort((a,b)=>(b[1].score||0)-(a[1].score||0))
-    .map(([id,p],i)=>`<div class="score"><span>${i+1}. ${esc(p.name)}</span><b>${p.score||0}</b></div>`).join("");
+  // preserve input values & focus across re-renders
+  const saved={}; let focus=document.activeElement?.id, selS, selE;
+  document.querySelectorAll("#app input,#app textarea,#app select").forEach(e=>{if(e.id) saved[e.id]=e.value});
+  if(focus && $(focus) && "selectionStart" in $(focus)){try{selS=$(focus).selectionStart;selE=$(focus).selectionEnd}catch(_){}}
+  $("app").innerHTML = view();
+  for(const id in saved){ if($(id) && !$(id).dataset.fresh) $(id).value=saved[id]; }
+  if(focus && $(focus)){ $(focus).focus(); try{ if(selS!=null) $(focus).setSelectionRange(selS,selE);}catch(_){} }
+  tick();
+}
 
-  const old=$("target").value;
-  $("target").innerHTML=Object.entries(players).map(([id,p])=>
-    `<option value="${id}">${esc(p.name)}</option>`).join("");
-  if(players[old])$("target").value=old;
+function view(){
+  if(screen==="home") return `
+    <div class="card">
+      <label>Your name</label><input id="name" maxlength="16" placeholder="e.g. Manuel">
+      <div class="row">
+        <div><button onclick="hostRoom()">Host a room</button></div>
+      </div>
+      <label>Room code</label>
+      <div class="row"><input id="code" maxlength="4" placeholder="ABCD" style="text-transform:uppercase"><button class="sec" onclick="joinRoom()" style="margin-top:0;flex:0 0 auto">Join</button></div>
+      ${error?`<p class="err">${esc(error)}</p>`:""}
+    </div>
+    <div class="card mut"><h2 style="color:var(--txt)">How to play</h2>
+    The host picks a prompt and a player. That player secretly gets a number from 1 to 10 and writes an answer that fits that number on the scale.
+    Everyone else guesses the number: <b>4 pts</b> exact, <b>2 pts</b> off by 1, <b>1 pt</b> off by 2.</div>`;
+  if(screen==="connecting") return `<div class="card">Connecting…${error?`<p class="err">${esc(error)}</p><button class="sec" onclick="location.reload()">Back</button>`:""}</div>`;
+  if(!state) return `<div class="card">Waiting for host…</div>`;
+  const s=state;
+  let h=`<div class="card"><div class="row" style="align-items:center"><div><span class="mut">Room</span><div class="code">${esc(s.code)}</div></div>
+    <div style="text-align:right" class="mut">${s.phase==="lobby"?"Lobby":`Round ${s.round} / ${s.totalRounds}`}<br>${isHost?"You are the host":"Playing as <b>"+esc(myName)+"</b>"}</div></div></div>`;
+  h+=phaseView(s);
+  h+=leaderboard(s);
+  return h;
+}
 
-  $("roundPanel").classList.toggle("hidden",phase==="lobby");
-  $("roundLabel").textContent=phase==="results"?
-    `ROUND ${round} / ${roundLimit}`:`ROUND ${round} / ${roundLimit}`;
-  $("prompt").textContent=promptText;
-  $("hostSecretBox").classList.toggle("hidden",!(isHost&&phase==="playing"));
-  $("hostSecret").textContent=isHost&&phase==="playing"&&secretNumber!==null?secretNumber:"";
-  $("role").textContent=phase==="playing"?
-    (targetId===myId?"You are answering. Keep your secret number hidden!":"Guess the answer player's number.")
-    :phase==="results"?"Round results":"";
-  $("secretBox").classList.toggle("hidden",!(phase==="playing"&&targetId===myId));
-  $("secret").textContent=targetId===myId&&secretNumber!==null?secretNumber:"";
-  $("answerArea").classList.toggle("hidden",!(phase==="playing"&&targetId===myId&&!submitted));
-  $("guessArea").classList.toggle("hidden",!(phase==="playing"&&targetId!==myId&&!submitted));
-  $("waiting").classList.toggle("hidden",!(phase==="playing"&&submitted));
-  $("next").classList.toggle("hidden",!(isHost&&phase==="results"));
-  $("next").textContent=round>=roundLimit?"Finish game":"Next round";
+function activeName(s){return s.players.find(p=>p.id===s.activeId)?.name||"?"}
 
-  if(phase==="results"&&lastResult){
-    $("timer").textContent="✓";
-    $("results").innerHTML=`<div class="notice"><b>Secret number: ${lastResult.number}</b><br>Answer: ${esc(lastResult.answer||"(no answer)")}</div>`+
-      Object.entries(lastResult.guesses||{}).map(([id,g])=>
-      `<div class="score"><span>${esc(players[id]?.name||"Player")} guessed ${g.value} (off by ${g.distance})</span><b>+${g.points}</b></div>`
-      ).join("");
-  }else if(phase==="playing"){
-    $("results").innerHTML="";
+function promptCard(s){return `<div class="card"><div class="mut">Prompt</div><div class="prompt">${esc(s.prompt)}</div><div class="scale"><span>1 = least</span><span>10 = most</span></div></div>`}
+
+function phaseView(s){
+  const amActive = myId===s.activeId;
+  switch(s.phase){
+    case "lobby":
+      if(isHost) return `<div class="card"><h2>Game settings</h2>
+        <div class="row">
+          <div><label>Rounds</label><input id="rounds" type="number" min="1" max="50" value="5"></div>
+          <div><label>Answer time</label><select id="atime">${TIMES.map(t=>`<option value="${t}" ${t===30?"selected":""}>${t}s</option>`).join("")}</select></div>
+          <div><label>Guess time</label><select id="gtime">${TIMES.map(t=>`<option value="${t}" ${t===20?"selected":""}>${t}s</option>`).join("")}</select></div>
+        </div>
+        <p class="mut">Share the room code with your friends. Players: ${s.players.length}</p>
+        <button onclick="startGame()" ${s.players.length<2?"disabled":""}>Start game</button>
+        ${s.players.length<2?`<span class="mut"> &nbsp;Need at least 2 players</span>`:""}</div>`;
+      return `<div class="card">Waiting for the host to start… <div style="margin-top:8px">${s.players.map(p=>`<span class="pill">${esc(p.name)}</span>`).join("")}</div></div>`;
+
+    case "prompt":
+      if(isHost) return `<div class="card"><h2>Choose a prompt</h2>
+        <label>Pick a category (random prompt)</label>
+        <div class="row"><select id="cat">${Object.keys(CATEGORIES).map(c=>`<option>${esc(c)}</option>`).join("")}</select>
+        <button class="sec" style="margin-top:0;flex:0 0 auto" onclick="pickCategory()">Random prompt</button></div>
+        <label>…or write your own</label>
+        <div class="row"><input id="custom" placeholder="How ___ is this?"><button class="sec" style="margin-top:0;flex:0 0 auto" onclick="pickCustom()">Use this</button></div></div>`;
+      return `<div class="card">The host is choosing a prompt…</div>`;
+
+    case "select":
+      return promptCard(s) + (isHost ? `<div class="card"><h2>Who describes the number?</h2>
+        <div class="row">${s.players.map(p=>`<button class="sec" onclick="selectPlayer('${p.id}')">${esc(p.name)}</button>`).join("")}</div>
+        <button class="sec" onclick="newPrompt()">Change prompt</button></div>`
+        : `<div class="card">The host is choosing a player…</div>`);
+
+    case "answer":
+      if(amActive) return promptCard(s)+`<div class="card"><span class="timer" id="timer"></span><div class="mut">Your secret number</div>
+        <div class="secret">${mySecret??"…"}</div>
+        <label>Write something that fits a ${mySecret} on this scale</label>
+        <div class="row"><input id="ans" maxlength="120" placeholder="Your answer" onkeydown="if(event.key==='Enter')sendAnswer()"><button style="margin-top:0;flex:0 0 auto" onclick="sendAnswer()">Submit</button></div></div>`;
+      return promptCard(s)+`<div class="card"><span class="timer" id="timer"></span>
+        ${isHost?`<div class="mut">Secret number for ${esc(activeName(s))}</div><div class="secret">${s._secret}</div>`:""}
+        <p><b>${esc(activeName(s))}</b> is writing an answer…</p></div>`;
+
+    case "guess": {
+      const top = promptCard(s)+`<div class="card"><div class="mut">${esc(activeName(s))}'s answer</div><div class="answer">${esc(s.answer)}</div></div>`;
+      const done = s.guessed.map(id=>s.players.find(p=>p.id===id)?.name).filter(Boolean);
+      const status=`<p class="mut">Guessed: ${done.length?done.map(n=>`<span class="pill">${esc(n)}</span>`).join(""):"nobody yet"}</p>`;
+      if(isHost) return top+`<div class="card"><span class="timer" id="timer"></span><div class="mut">Secret number</div><div class="secret">${s._secret}</div>${status}
+        <button class="sec" onclick="reveal()">Reveal now</button></div>`;
+      if(amActive) return top+`<div class="card"><span class="timer" id="timer"></span>Everyone is guessing your number…${status}</div>`;
+      const mine = s.guessed.includes(myId);
+      return top+`<div class="card"><span class="timer" id="timer"></span><h2>Which number was it?</h2>
+        <div class="nums">${[1,2,3,4,5,6,7,8,9,10].map(n=>`<button class="${myGuess===n?"sel":""}" ${mine?"disabled":""} onclick="sendGuess(${n})">${n}</button>`).join("")}</div>
+        ${mine?`<p class="good">Guess locked in: ${myGuess}</p>`:""}${status}</div>`;
+    }
+
+    case "reveal": {
+      const rows=s.players.filter(p=>p.id!==s.activeId).map(p=>{
+        const g=s.guesses[p.id]; const pts=g==null?0:points(g,s.secret);
+        return `<tr><td>${esc(p.name)}</td><td>${g??"–"}</td><td class="${pts?"good":"mut"}">+${pts}</td></tr>`}).join("");
+      return promptCard(s)+`<div class="card"><div class="mut">${esc(activeName(s))}'s answer</div><div class="answer">${esc(s.answer)}</div>
+        <div class="mut" style="margin-top:14px">The number was</div><div class="secret">${s.secret}</div>
+        <table style="margin-top:12px"><tr><th>Player</th><th>Guess</th><th>Points</th></tr>${rows}</table>
+        ${isHost?`<button onclick="nextRound()">${s.round>=s.totalRounds?"Finish game":"Next round"}</button>`:""}</div>`;
+    }
+
+    case "end": {
+      const sorted=[...s.players].sort((a,b)=>b.score-a.score);
+      return `<div class="card" style="text-align:center"><div class="mut">Winner</div><div class="secret" style="font-size:3rem">${esc(sorted[0]?.name||"")}</div>
+        ${isHost?`<button onclick="restart()">Play again</button>`:""}</div>`;
+    }
   }
-}
-function esc(s){
-  return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  return "";
 }
 
-/* Host creates a room using a PeerJS ID derived from its code. */
-$("create").onclick=()=>{
-  myName=nameInput();
-  if(!myName)return setError("Enter your name first.");
-  if(!window.Peer)return setError("PeerJS could not load. Check your internet connection.");
-  setError("");
-  roomCode=makeCode();
-  peer=new Peer(PREFIX+roomCode.toLowerCase());
-  peer.on("open",id=>{
-    isHost=true;myId="host";
-    players.host={name:myName,score:0};
-    peer.on("connection",c=>{
-      c.on("data",m=>hostMessage(c,m));
-      c.on("close",()=>{delete conns[c.peer];delete players[c.peer];delete guesses[c.peer];delete answers[c.peer];publish();});
-      c.on("error",()=>{delete conns[c.peer];delete players[c.peer];publish();});
-      c.on("open",()=>{});
-    });
-    showGame();
-    publish();
-  });
-  peer.on("error",e=>setError("Could not create lobby ("+e.type+"). Try again."));
-};
+function leaderboard(s){
+  const sorted=[...s.players].sort((a,b)=>b.score-a.score);
+  return `<div class="card"><h2>Leaderboard</h2><table><tr><th>#</th><th>Player</th><th>Points</th></tr>
+    ${sorted.map((p,i)=>`<tr><td>${i+1}</td><td>${esc(p.name)}${p.id===myId?" <span class='mut'>(you)</span>":""}${s.activeId===p.id&&s.phase!=="lobby"?" ✍️":""}</td>
+    <td>${isHost?`<input type="number" value="${p.score}" data-fresh="1" onchange="editScore('${p.id}',this.value)">`:p.score}</td></tr>`).join("")}
+    </table>${isHost?`<p class="mut" style="font-size:.8rem">You can edit points directly.</p>`:""}</div>`;
+}
 
-/* Guests connect directly to the host. */
-$("showJoin").onclick=()=>$("joinArea").classList.toggle("hidden");
-$("join").onclick=()=>{
-  myName=nameInput();
-  const code=$("codeInput").value.trim().toUpperCase();
-  if(!myName)return setError("Enter your name first.");
-  if(!/^[A-Z]{4}$/.test(code))return setError("Enter a four-letter lobby code.");
-  if(!window.Peer)return setError("PeerJS could not load. Check your internet connection.");
-  setError("");
-  roomCode=code;
-  peer=new Peer();
-  let finished=false;
-  const timeout=setTimeout(()=>{if(!finished){setError("Could not reach the lobby. Check the code and try again.");peer.destroy();}},15000);
+function tick(){
+  const el=$("timer"); if(!el) return;
+  const left=Math.max(0,Math.ceil((localDeadline-Date.now())/1000));
+  el.textContent=left+"s";
+}
+setInterval(tick,250);
+
+/* ---------------- NETWORK ---------------- */
+function getName(){
+  const n=$("name").value.trim();
+  if(!n){error="Please enter your name.";render();return null}
+  return n;
+}
+function randCode(){const L="ABCDEFGHJKLMNPQRSTUVWXYZ";return Array.from({length:4},()=>L[Math.floor(Math.random()*L.length)]).join("")}
+
+function hostRoom(){
+  const n=getName(); if(!n) return;
+  myName=n; isHost=true; error=""; screen="connecting"; render();
+  const code=randCode();
+  peer=new Peer(PREFIX+code);
   peer.on("open",id=>{
     myId=id;
-    hostConn=peer.connect(PREFIX+code.toLowerCase(),{reliable:true});
-    hostConn.on("open",()=>{
-      if(finished)return;finished=true;clearTimeout(timeout);
-      send(hostConn,{type:"join",name:myName});
-      showGame();
-    });
-    hostConn.on("data",m=>guestMessage(m));
-    hostConn.on("close",()=>setError("The host disconnected. Reload to start again."));
-    hostConn.on("error",()=>setError("Connection to the host was lost."));
+    state={code,phase:"lobby",players:[],round:0,totalRounds:5,answerTime:30,guessTime:20,prompt:"",activeId:null,answer:"",guesses:{},guessed:[],secret:null,_secret:null,timeLeft:0};
+    screen="game"; render();
   });
-  peer.on("error",e=>{
-    clearTimeout(timeout);
-    if(!finished)setError(e.type==="peer-unavailable"?"Lobby not found. Check the code.":"Connection error: "+e.type);
+  peer.on("connection",c=>{
+    c.on("data",d=>onHostData(c,d));
+    c.on("close",()=>{delete conns[c.peer];});
   });
-};
-$("codeInput").oninput=e=>e.target.value=e.target.value.toUpperCase().replace(/[^A-Z]/g,"").slice(0,4);
-$("copy").onclick=async()=>{
-  const link=location.href.split("#")[0]+"#"+roomCode;
-  try{await navigator.clipboard.writeText(link);$("copy").textContent="Copied!";}
-  catch(e){prompt("Copy this invite link:",link);}
-  setTimeout(()=>$("copy").textContent="Copy invite link",2000);
-};
-if(/^#[A-Z]{4}$/i.test(location.hash))$("codeInput").value=location.hash.slice(1).toUpperCase();
-
-function hostMessage(c,m){
-  if(!m||typeof m!=="object")return;
-  if(m.type==="join"&&phase==="lobby"){
-    conns[c.peer]=c;
-    players[c.peer]={name:String(m.name||"Player").slice(0,24),score:0};
-    send(c,publicState());
-    publish();
-  }else if(m.type==="answer"&&phase==="playing"&&m.round===round&&c.peer===targetId){
-    answers[c.peer]=String(m.value||"").slice(0,250);
-  }else if(m.type==="guess"&&phase==="playing"&&m.round===round&&c.peer!==targetId){
-    const n=Number(m.value);
-    if(Number.isInteger(n)&&n>=1&&n<=10)guesses[c.peer]=n;
-  }
+  peer.on("error",e=>{ if(e.type==="unavailable-id"){peer.destroy();hostRoom();} else {error="Connection error: "+e.type;render();}});
 }
-function guestMessage(m){
-  if(!m||typeof m!=="object")return;
-  if(m.type==="state"){
-    phase=m.phase;round=m.round;roundLimit=m.roundLimit;promptText=m.promptText;
-    targetId=m.targetId;players=m.players||{};endAt=m.endAt||0;lastResult=m.result||null;
-    if(phase!=="playing"){secretNumber=null;submitted=false;}
+
+function joinRoom(){
+  const n=getName(); if(!n) return;
+  const code=$("code").value.trim().toUpperCase();
+  if(!/^[A-Z]{4}$/.test(code)){error="Enter the 4-letter room code.";render();return}
+  myName=n; error=""; screen="connecting"; render();
+  peer=new Peer();
+  peer.on("open",id=>{
+    myId=id;
+    hostConn=peer.connect(PREFIX+code,{reliable:true});
+    hostConn.on("open",()=>{hostConn.send({t:"join",name:myName}); screen="game"; render();});
+    hostConn.on("data",onClientData);
+    hostConn.on("close",()=>{error="Disconnected from host.";screen="connecting";render();});
+  });
+  peer.on("error",e=>{error=e.type==="peer-unavailable"?"Room not found. Check the code.":"Connection error: "+e.type;render();});
+}
+
+function onClientData(d){
+  if(d.t==="state"){
+    const prevPhase=state?.phase;
+    state=d.state;
+    localDeadline=Date.now()+state.timeLeft*1000;
+    if(state.phase!=="answer" && state.phase!=="guess"){ if(state.phase!=="reveal") mySecret=null; }
+    if(state.phase==="guess" && prevPhase!=="guess") myGuess=null;
+    if(state.phase!==prevPhase && $("ans")) $("ans").value="";
     render();
-    if(phase==="playing"&&endAt)startTimer();
-  }else if(m.type==="secret"&&m.round===round){
-    secretNumber=m.number;render();
-  }else if(m.type==="result"){
-    lastResult=m.result;phase="results";render();
-  }
+  } else if(d.t==="secret"){ mySecret=d.n; render(); }
 }
 
-/* Start a round: host chooses the target and privately sends their number. */
-$("category").onchange=()=>{
-  const custom=$("category").value==="Custom";
-  $("customPrompt").classList.toggle("hidden",!custom);
-  $("customLabel").classList.toggle("hidden",!custom);
-};
-$("randomPrompt").onclick=()=>{
-  const category=$("category").value;
-  if(category==="Custom")return setError("Enter a custom prompt first.");
-  const list=PROMPTS[category]||PROMPTS["General Knowledge"];
-  let pool=list.filter(p=>!usedPrompts.has(p));
-  if(!pool.length){usedPrompts.clear();pool=list;}
-  $("manualPrompt").value=pool[Math.floor(Math.random()*pool.length)];
-  setError("");
-};
-$("start").onclick=()=>{
-  if(!isHost||Object.keys(players).length<2)return setError("At least two players are needed.");
-  if(phase==="playing")return;
-  const category=$("category").value;
-  let p=$("manualPrompt").value.trim();
-  if(!p)p=category==="Custom"?$("customPrompt").value.trim():"";
-  if(!p&&category!=="Custom"){
-    const list=PROMPTS[category]||PROMPTS["General Knowledge"];
-    let pool=list.filter(x=>!usedPrompts.has(x));
-    if(!pool.length){usedPrompts.clear();pool=list;}
-    p=pool[Math.floor(Math.random()*pool.length)];
-  }
-  if(!p)return setError("Enter a custom prompt first.");
-  promptText=p;usedPrompts.add(p);
-  roundLimit=Number($("roundLimit").value)||5;
-  round=round+1;
-  targetId=$("target").value;
-  secretNumber=Math.floor(Math.random()*10)+1;
-  guesses={};answers={};lastResult=null;submitted=false;
-  phase="playing";endAt=Date.now()+20000;
-  // Tell the target their number privately, never in the public state.
-  if(targetId==="host"){
-    // Host already has the secret in local state.
-  }else{
-    send(conns[targetId],{type:"secret",number:secretNumber,round});
-  }
-  publish();
-  startTimer();
-  setError("");
-};
-function startTimer(){
-  if(timerLoop)clearInterval(timerLoop);
-  const tick=()=>{
-    if(phase!=="playing"){clearInterval(timerLoop);return;}
-    const remaining=Math.max(0,Math.ceil((endAt-Date.now())/1000));
-    $("timer").textContent=remaining;
-    if(remaining<=0&&isHost)finishRound();
-  };
-  tick();timerLoop=setInterval(tick,250);
-}
-
-$("submitAnswer").onclick=()=>{
-  if(phase!=="playing"||targetId!==myId||submitted)return;
-  const value=$("answer").value.trim();
-  if(!value)return setError("Enter your answer first.");
-  submitted=true;
-  if(isHost)answers.host=value;
-  else send(hostConn,{type:"answer",round,value});
-  $("waiting").classList.remove("hidden");render();
-};
-$("submitGuess").onclick=()=>{
-  if(phase!=="playing"||targetId===myId||submitted)return;
-  const value=Number($("guess").value);
-  if(!value)return setError("Choose a number first.");
-  submitted=true;
-  if(isHost)guesses.host=value;
-  else send(hostConn,{type:"guess",round,value});
-  $("waiting").classList.remove("hidden");render();
-};
-
-function finishRound(){
-  if(!isHost||phase!=="playing")return;
-  phase="results";
-  const resultGuesses={};
-  for(const [id,value] of Object.entries(guesses)){
-    const distance=Math.abs(value-secretNumber);
-    const points=distance===0?4:distance===1?2:distance===2?1:0;
-    resultGuesses[id]={value,distance,points};
-    if(players[id])players[id].score=(players[id].score||0)+points;
-  }
-  lastResult={number:secretNumber,answer:answers[targetId]||"",guesses:resultGuesses};
-  publish();
-  broadcast({type:"result",result:lastResult});
+/* ---------------- HOST LOGIC ---------------- */
+function broadcast(){
+  const left=Math.max(0,Math.round((localDeadline-Date.now())/1000));
+  state.timeLeft = (state.phase==="answer"||state.phase==="guess")?left:0;
+  const pub={...state,_secret:null};
+  if(state.phase!=="reveal"){pub.secret=null; pub.guesses={};}
+  for(const id in conns){ try{conns[id].send({t:"state",state:pub})}catch(_){} }
   render();
 }
-$("next").onclick=()=>{
-  if(!isHost)return;
-  if(round>=roundLimit){
-    phase="finished";promptText="Game over!";publish();return;
+
+function onHostData(c,d){
+  if(d.t==="join"){
+    conns[c.peer]=c;
+    let p=state.players.find(p=>p.id===c.peer);
+    if(!p) state.players.push({id:c.peer,name:String(d.name).slice(0,16),score:0});
+    broadcast();
+    if(state.phase==="answer" && c.peer===state.activeId) c.send({t:"secret",n:state._secret});
+  } else if(d.t==="answer" && state.phase==="answer" && c.peer===state.activeId){
+    state.answer=String(d.text).slice(0,120)||"(no answer)";
+    startGuessing();
+  } else if(d.t==="guess" && state.phase==="guess" && c.peer!==state.activeId && !state.guessed.includes(c.peer)){
+    const n=parseInt(d.n); if(n<1||n>10) return;
+    state.guesses[c.peer]=n; state.guessed.push(c.peer);
+    const guessers=state.players.filter(p=>p.id!==state.activeId && conns[p.id]);
+    if(guessers.every(p=>state.guessed.includes(p.id))) reveal(); else broadcast();
   }
-  phase="lobby";promptText="";secretNumber=null;targetId=null;
-  publish();
-};
-$("editScoreBtn").onclick=()=>{
-  if(!isHost)return;
-  const lines=Object.entries(players).map(([id,p])=>`${id} = ${p.name}: ${p.score||0}`).join("\n");
-  const id=prompt("Enter the player ID to edit:\n"+lines);
-  if(!id||!players[id])return;
-  const score=prompt("New score for "+players[id].name,players[id].score||0);
-  if(score===null||!Number.isFinite(Number(score)))return;
-  players[id].score=Number(score);
-  publish();
-};
-$("leave").onclick=()=>{
-  if(peer)peer.destroy();
-  location.href=location.href.split("#")[0];
-};
+}
+
+function setTimer(sec,fn){
+  clearTimeout(hostTimer);
+  localDeadline=Date.now()+sec*1000;
+  hostTimer=setTimeout(fn,sec*1000);
+}
+
+function startGame(){
+  state.totalRounds=Math.max(1,Math.min(50,parseInt($("rounds").value)||5));
+  state.answerTime=parseInt($("atime").value); state.guessTime=parseInt($("gtime").value);
+  state.players.forEach(p=>p.score=0);
+  state.round=1; state.phase="prompt"; broadcast();
+}
+function pickCategory(){const list=CATEGORIES[$("cat").value]; let p; do{p=list[Math.floor(Math.random()*list.length)]}while(p===state.prompt&&list.length>1); setPrompt(p);}
+function pickCustom(){const v=$("custom").value.trim(); if(v) setPrompt(v);}
+function setPrompt(p){state.prompt=p; state.phase="select"; broadcast();}
+function newPrompt(){state.phase="prompt"; broadcast();}
+
+function selectPlayer(id){
+  state.activeId=id; state._secret=1+Math.floor(Math.random()*10);
+  state.answer=""; state.guesses={}; state.guessed=[]; state.secret=null;
+  state.phase="answer";
+  setTimer(state.answerTime,()=>{ if(state.phase==="answer"){state.answer="(ran out of time)";startGuessing();} });
+  broadcast();
+  conns[id]?.send({t:"secret",n:state._secret});
+}
+function startGuessing(){
+  state.phase="guess";
+  setTimer(state.guessTime,()=>{ if(state.phase==="guess") reveal(); });
+  broadcast();
+}
+function points(g,s){const d=Math.abs(g-s);return d===0?4:d===1?2:d===2?1:0}
+function reveal(){
+  clearTimeout(hostTimer);
+  state.secret=state._secret;
+  for(const id in state.guesses){const p=state.players.find(p=>p.id===id); if(p) p.score+=points(state.guesses[id],state.secret);}
+  state.phase="reveal"; broadcast();
+}
+function nextRound(){
+  if(state.round>=state.totalRounds){state.phase="end";}
+  else {state.round++; state.phase="prompt"; state.activeId=null;}
+  broadcast();
+}
+function restart(){state.phase="lobby"; state.round=0; state.activeId=null; broadcast();}
+function editScore(id,v){const p=state.players.find(p=>p.id===id); if(p){p.score=parseInt(v)||0; broadcast();}}
+
+/* ---------------- PLAYER ACTIONS ---------------- */
+function sendAnswer(){const v=$("ans").value.trim(); if(!v) return; hostConn.send({t:"answer",text:v});}
+function sendGuess(n){myGuess=n; hostConn.send({t:"guess",n}); render();}
+
+render();
 </script>
 </body>
 </html>
